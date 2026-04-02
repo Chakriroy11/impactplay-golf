@@ -4,6 +4,7 @@ import { HeartPulse } from 'lucide-react';
 import Dashboard from './Dashboard';
 import AdminPanel from './AdminPanel';
 import Login from './Login';
+import { supabase } from './lib/supabase'; // Initialize SDK to parse email hashes
 
 export default function App() {
   return (
