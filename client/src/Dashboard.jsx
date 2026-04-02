@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { HeartPulse, Medal, TrendingUp, Trophy, UploadCloud } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { supabase } from './lib/supabase';
 
 export default function Dashboard() {
   const [scores, setScores] = useState([]);
