@@ -34,7 +34,7 @@ export default function Dashboard() {
     
     // Calls Express backend to handle logic
     try {
-      const res = await fetch('http://localhost:5000/api/scores', {
+      const res = await fetch('/api/scores', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ user_id: session?.user?.id, score: Number(newScore) })
