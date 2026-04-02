@@ -1,8 +1,9 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { HeartPulse } from 'lucide-react';
 import Dashboard from './Dashboard';
 import AdminPanel from './AdminPanel';
+import Login from './Login';
 
 export default function App() {
   return (
@@ -11,19 +12,21 @@ export default function App() {
         
         {/* Navigation / Header Scaffold */}
         <header className="w-full max-w-7xl mx-auto p-6 flex justify-between items-center z-10 relative">
-          <motion.div 
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="flex items-center gap-2 font-bold text-2xl tracking-tighter"
-          >
-            <HeartPulse className="text-rose-500 w-8 h-8" />
-            <span>Impact<span className="text-zinc-500">Play</span></span>
-          </motion.div>
+          <Link to="/">
+            <motion.div 
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex items-center gap-2 font-bold text-2xl tracking-tighter"
+            >
+              <HeartPulse className="text-rose-500 w-8 h-8" />
+              <span>Impact<span className="text-zinc-500">Play</span></span>
+            </motion.div>
+          </Link>
           
-          <nav className="flex gap-6 text-sm font-medium text-zinc-400">
-            <a href="/" className="hover:text-white transition-colors">Home</a>
-            <a href="/dashboard" className="hover:text-white transition-colors">Dashboard</a>
-            <a href="/login" className="bg-white text-black px-4 py-2 rounded-full hover:bg-zinc-200 transition-colors">Sign In</a>
+          <nav className="flex gap-6 text-sm font-medium text-zinc-400 items-center">
+            <Link to="/" className="hover:text-white transition-colors">Home</Link>
+            <Link to="/dashboard" className="hover:text-white transition-colors">Dashboard</Link>
+            <Link to="/login" className="bg-white text-black px-5 py-2 rounded-full hover:bg-zinc-200 transition-colors">Sign In</Link>
           </nav>
         </header>
 
@@ -34,7 +37,7 @@ export default function App() {
               <Route path="/" element={<HomeHero />} />
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/admin" element={<AdminPanel />} />
-              <Route path="/login" element={<div className="text-zinc-400">Login Form Placeholder</div>} />
+              <Route path="/login" element={<Login />} />
             </Routes>
           </AnimatePresence>
         </main>
