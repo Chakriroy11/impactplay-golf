@@ -121,7 +121,101 @@ async function simulateDraw(req, res) {
 
 // FINALIZES A DRAW and calculates all winners
 async function publishDraw(req, res) {
-  // Logic to actually change status to 'published' and insert all winning users into the `winnings` table.
+  try {
+    // 1. Get the latest simulated draw
+    const { data: draws, error: drawError } = await supabase
+      .from('draws')
+      .select('*')
+      .eq('status', 'simulated')
+      .order('created_at', { ascending: false })
+      .limit(1);
+
+    if (drawError || !draws || draws.length === 0) {
+      return res.status(400).json({ error: 'No simulated draw found to publish' });
+    }
+    const draw = draws[0];
+    const winningNumbersSet = new Set(draw.winning_numbers);
+
+    // 2. Fetch all active subscribers
+    const { data: activeUsers, error: usersErr } = await supabase
+      .from('users')
+      .select('id')
+      .eq('subscription_status', 'active');
+      
+    if (usersErr) throw usersErr;
+    const activeUserIds = new Set(activeUsers.map(u => u.id));
+
+    // 3. Fetch all scores and find top 5 for each active user
+    const { data: allScores, error: scoresErr } = await supabase
+      .from('scores')
+      .select('user_id, score')
+      .order('created_at', { ascending: false });
+
+    if (scoresErr) throw scoresErr;
+
+    const userLatestScores = {};
+    for (const s of allScores) {
+      if (!activeUserIds.has(s.user_id)) continue;
+      if (!userLatestScores[s.user_id]) userLatestScores[s.user_id] = [];
+      if (userLatestScores[s.user_id].length < 5) {
+        userLatestScores[s.user_id].push(s.score);
+      }
+    }
+
+    // 4. Calculate matches
+    const tier5Winners = [];
+    const tier4Winners = [];
+    const tier3Winners = [];
+
+    for (const [userId, scores] of Object.entries(userLatestScores)) {
+      let matchCount = 0;
+      for (const score of scores) {
+        if (winningNumbersSet.has(score)) matchCount++;
+      }
+      
+      if (matchCount === 5) tier5Winners.push(userId);
+      else if (matchCount === 4) tier4Winners.push(userId);
+      else if (matchCount === 3) tier3Winners.push(userId);
+    }
+
+    // 5. Calculate payout per winner
+    const match5Payout = tier5Winners.length > 0 ? (draw.jackpot_amount / tier5Winners.length) : 0;
+    const match4Payout = tier4Winners.length > 0 ? (draw.match_4_amount / tier4Winners.length) : 0;
+    const match3Payout = tier3Winners.length > 0 ? (draw.match_3_amount / tier3Winners.length) : 0;
+
+    // 6. Generate winnings rows
+    const winningsToInsert = [];
+    tier5Winners.forEach(id => winningsToInsert.push({ draw_id: draw.id, user_id: id, match_tier: 5, amount_won: match5Payout }));
+    tier4Winners.forEach(id => winningsToInsert.push({ draw_id: draw.id, user_id: id, match_tier: 4, amount_won: match4Payout }));
+    tier3Winners.forEach(id => winningsToInsert.push({ draw_id: draw.id, user_id: id, match_tier: 3, amount_won: match3Payout }));
+
+    // 7. Save strictly in Database
+    if (winningsToInsert.length > 0) {
+      const { error: winErr } = await supabase.from('winnings').insert(winningsToInsert);
+      if (winErr) throw winErr;
+    }
+
+    // 8. Change draw status to published
+    const { error: updateErr } = await supabase
+      .from('draws')
+      .update({ status: 'published' })
+      .eq('id', draw.id);
+      
+    if (updateErr) throw updateErr;
+
+    return res.status(200).json({ 
+      message: 'Draw published successfully', 
+      stats: {
+        match5_winners: tier5Winners.length,
+        match4_winners: tier4Winners.length,
+        match3_winners: tier3Winners.length
+      }
+    });
+
+  } catch (err) {
+    console.error('Error publishing draw:', err);
+    return res.status(500).json({ error: 'Internal server error while publishing' });
+  }
 }
 
 module.exports = {
